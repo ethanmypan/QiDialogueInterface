@@ -1,0 +1,67 @@
+[
+  {
+    "Dialogue": "Hello player!",
+    "ID": "Greeting1",
+    "DialogueInstance": [
+      {
+        "QuestID": "0",
+        "StageIndex": "0",
+        "givers": [
+          "GreetingRes1"
+        ],
+        "FollowUpID": "",
+        "IsLastResponse": "false",
+        "SelectedReply": ""
+      }
+    ],
+    "IsResponse": "false"
+  },
+  {
+    "Dialogue": "Hello NPC!",
+    "ID": "GreetingRes1",
+    "DialogueInstance": [
+      {
+        "QuestID": "0",
+        "StageIndex": "0",
+        "givers": [],
+        "FollowUpID": "Greeting2",
+        "IsLastResponse": "false",
+        "SelectedReply": ""
+      }
+    ],
+    "IsResponse": "true"
+  },
+  {
+    "Dialogue": "Have a good day!",
+    "ID": "Greeting2",
+    "DialogueInstance": [
+      {
+        "QuestID": "0",
+        "StageIndex": "0",
+        "givers": [],
+        "FollowUpID": "",
+        "IsLastResponse": "true",
+        "SelectedReply": ""
+      }
+    ],
+    "IsResponse": "false"
+  },
+  {
+    "Dialogue": "Why did the chicken cross the road?",
+    "ID": "Joke1",
+    "DialogueInstance": [],
+    "IsResponse": "false"
+  },
+  {
+    "Dialogue": "To get to the other side!",
+    "ID": "Joke1Res1",
+    "DialogueInstance": [],
+    "IsResponse": "true"
+  },
+  {
+    "Dialogue": "I dunno.....",
+    "ID": "Joke1Res2",
+    "DialogueInstance": [],
+    "IsResponse": "true"
+  }
+]

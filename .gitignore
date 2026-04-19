@@ -1,0 +1,22 @@
+# Reference documentation (internal use only)
+json.md
+backendplan.md
+
+# Node.js / Backend
+node_modules/
+dist/
+*.log
+npm-debug.log*
+.env
+backend/test-node.json
+backend/dist/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
