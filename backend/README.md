@@ -7,6 +7,7 @@ Backend REST API for the Dialogue Graph Editor, built with Node.js, Express, and
 - ✅ Parse Unreal Engine dialogue JSON format
 - ✅ Convert to graph structure (nodes + edges)
 - ✅ CRUD operations for nodes and edges
+- ✅ **MongoDB persistence** - automatic save on all changes
 - ✅ Graph validation (errors & warnings)
 - ✅ Export back to Unreal JSON format
 - ✅ Round-trip support (import → edit → export)
@@ -16,6 +17,20 @@ Backend REST API for the Dialogue Graph Editor, built with Node.js, Express, and
 ```bash
 npm install
 ```
+
+## Environment Setup
+
+Create a `.env` file in the `backend/` directory:
+
+```bash
+# MongoDB connection string (required for persistence)
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dialogue-editor
+
+# Server port (optional, defaults to 3000)
+PORT=3000
+```
+
+**Note:** The system will work without MongoDB but data won't persist across server restarts.
 
 ## Running the Server
 
@@ -38,16 +53,19 @@ The server will start on `http://localhost:3000`
 backend/
 ├── src/
 │   ├── types/
-│   │   └── dialogue.ts       # TypeScript interfaces
+│   │   └── dialogue.ts          # TypeScript interfaces
+│   ├── models/
+│   │   └── dialogue-graph.model.ts  # Mongoose schema
 │   ├── services/
-│   │   ├── parser.ts         # JSON → Graph parser
-│   │   ├── graph-service.ts  # Graph CRUD operations
-│   │   ├── validator.ts      # Graph validation
-│   │   └── exporter.ts       # Graph → JSON exporter
+│   │   ├── parser.ts            # JSON → Graph parser
+│   │   ├── graph-service.ts     # Graph CRUD with auto-save
+│   │   ├── database.service.ts  # MongoDB connection
+│   │   ├── validator.ts         # Graph validation
+│   │   └── exporter.ts          # Graph → JSON exporter
 │   ├── routes/
-│   │   └── api.ts            # API route handlers
+│   │   └── api.ts               # API route handlers (async)
 │   ├── middleware/
-│   │   └── error-handler.ts  # Error handling
+│   │   └── error-handler.ts     # Error handling
 │   └── server.ts             # Main server entry point
 ├── dist/                     # Compiled JavaScript (generated)
 └── package.json
@@ -429,11 +447,19 @@ Converts Unreal JSON (with string booleans) to internal graph structure:
 - Extracts nodes into a Map keyed by ID
 - Builds edges from `givers[]` (choices) and `FollowUpID` (followup)
 
+### Database Service
+MongoDB persistence with Mongoose ODM:
+- Automatic connection on server startup
+- Stores graphs with unique `graphId` (currently uses "default")
+- Converts Map<string, Node> to/from array for MongoDB storage
+- Graceful fallback if MongoDB not configured
+
 ### Graph Service
-In-memory graph management with CRUD operations:
-- Singleton instance maintains current graph state
-- Thread-safe for single-user editing sessions
-- No database required (stateless per session)
+Write-through cache with automatic persistence:
+- Maintains in-memory Map for fast reads
+- All write operations (create, update, delete) auto-save to MongoDB
+- Async methods ensure data consistency
+- Single-user editing sessions (no concurrent access control)
 
 ### Exporter Module
 Reverse transformation back to Unreal JSON:

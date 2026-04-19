@@ -16,7 +16,7 @@ export function createApiRouter(graphService: GraphService): Router {
    * POST /api/import
    * Import and parse Unreal JSON dialogue data
    */
-  router.post('/import', (req: Request, res: Response) => {
+  router.post('/import', async (req: Request, res: Response) => {
     try {
       const jsonData = req.body;
 
@@ -28,7 +28,7 @@ export function createApiRouter(graphService: GraphService): Router {
       }
 
       const graph = parseUnrealJSON(jsonData);
-      graphService.setGraph(graph);
+      await graphService.setGraph(graph);
 
       res.json({
         success: true,
@@ -73,7 +73,7 @@ export function createApiRouter(graphService: GraphService): Router {
    * POST /api/nodes
    * Create a new dialogue node
    */
-  router.post('/nodes', (req: Request, res: Response) => {
+  router.post('/nodes', async (req: Request, res: Response) => {
     try {
       const node: DialogueNode = req.body;
 
@@ -84,7 +84,7 @@ export function createApiRouter(graphService: GraphService): Router {
         });
       }
 
-      graphService.createNode(node);
+      await graphService.createNode(node);
 
       res.json({
         success: true,
@@ -103,12 +103,12 @@ export function createApiRouter(graphService: GraphService): Router {
    * PUT /api/nodes/:id
    * Update an existing dialogue node
    */
-  router.put('/nodes/:id', (req: Request, res: Response) => {
+  router.put('/nodes/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
       const updates = req.body;
 
-      graphService.updateNode(id, updates);
+      await graphService.updateNode(id, updates);
 
       const updatedNode = graphService.getNode(id);
 
@@ -129,11 +129,11 @@ export function createApiRouter(graphService: GraphService): Router {
    * DELETE /api/nodes/:id
    * Delete a dialogue node and all its edges
    */
-  router.delete('/nodes/:id', (req: Request, res: Response) => {
+  router.delete('/nodes/:id', async (req: Request, res: Response) => {
     try {
       const id = req.params.id as string;
 
-      graphService.deleteNode(id);
+      await graphService.deleteNode(id);
 
       res.json({
         success: true,
@@ -151,7 +151,7 @@ export function createApiRouter(graphService: GraphService): Router {
    * POST /api/edges
    * Create an edge between two nodes
    */
-  router.post('/edges', (req: Request, res: Response) => {
+  router.post('/edges', async (req: Request, res: Response) => {
     try {
       const edge: Edge = req.body;
 
@@ -169,7 +169,7 @@ export function createApiRouter(graphService: GraphService): Router {
         });
       }
 
-      graphService.addEdge(edge);
+      await graphService.addEdge(edge);
 
       res.json({
         success: true,
@@ -188,12 +188,12 @@ export function createApiRouter(graphService: GraphService): Router {
    * DELETE /api/edges/:from/:to
    * Delete an edge between two nodes
    */
-  router.delete('/edges/:from/:to', (req: Request, res: Response) => {
+  router.delete('/edges/:from/:to', async (req: Request, res: Response) => {
     try {
       const from = req.params.from as string;
       const to = req.params.to as string;
 
-      graphService.removeEdge(from, to);
+      await graphService.removeEdge(from, to);
 
       res.json({
         success: true,

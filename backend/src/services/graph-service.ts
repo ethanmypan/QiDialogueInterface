@@ -3,12 +3,32 @@
  */
 
 import { DialogueGraph, DialogueNode, Edge } from '../types/dialogue';
+import { databaseService } from './database.service';
 
 export class GraphService {
   private graph: DialogueGraph;
+  private graphId: string;
 
-  constructor(initialGraph?: DialogueGraph) {
+  constructor(graphId: string = 'default', initialGraph?: DialogueGraph) {
+    this.graphId = graphId;
     this.graph = initialGraph || { nodes: new Map(), edges: [] };
+  }
+
+  /**
+   * Load graph from database
+   */
+  async loadFromDatabase(): Promise<void> {
+    const loadedGraph = await databaseService.loadGraph(this.graphId);
+    if (loadedGraph) {
+      this.graph = loadedGraph;
+    }
+  }
+
+  /**
+   * Save current graph to database
+   */
+  private async saveToDatabase(): Promise<void> {
+    await databaseService.saveGraph(this.graphId, this.graph);
   }
 
   /**
@@ -21,8 +41,9 @@ export class GraphService {
   /**
    * Replace the entire graph
    */
-  setGraph(graph: DialogueGraph): void {
+  async setGraph(graph: DialogueGraph): Promise<void> {
     this.graph = graph;
+    await this.saveToDatabase();
   }
 
   // ========== Node CRUD Operations ==========
@@ -31,11 +52,12 @@ export class GraphService {
    * Create a new node
    * @throws Error if node with same ID already exists
    */
-  createNode(node: DialogueNode): void {
+  async createNode(node: DialogueNode): Promise<void> {
     if (this.graph.nodes.has(node.ID)) {
       throw new Error(`Node with ID "${node.ID}" already exists`);
     }
     this.graph.nodes.set(node.ID, node);
+    await this.saveToDatabase();
   }
 
   /**
@@ -56,7 +78,7 @@ export class GraphService {
    * Update a node (partial update)
    * @throws Error if node doesn't exist
    */
-  updateNode(id: string, updates: Partial<Omit<DialogueNode, 'ID'>>): void {
+  async updateNode(id: string, updates: Partial<Omit<DialogueNode, 'ID'>>): Promise<void> {
     const node = this.graph.nodes.get(id);
     if (!node) {
       throw new Error(`Node with ID "${id}" not found`);
@@ -65,12 +87,13 @@ export class GraphService {
     // Apply updates (excluding ID to prevent changing it)
     const updatedNode: DialogueNode = { ...node, ...updates, ID: id };
     this.graph.nodes.set(id, updatedNode);
+    await this.saveToDatabase();
   }
 
   /**
    * Delete a node and all edges referencing it
    */
-  deleteNode(id: string): void {
+  async deleteNode(id: string): Promise<void> {
     // Remove the node
     this.graph.nodes.delete(id);
 
@@ -78,6 +101,7 @@ export class GraphService {
     this.graph.edges = this.graph.edges.filter(
       edge => edge.from !== id && edge.to !== id
     );
+    await this.saveToDatabase();
   }
 
   // ========== Edge Operations ==========
@@ -86,7 +110,7 @@ export class GraphService {
    * Add an edge between two nodes
    * @throws Error if nodes don't exist or edge already exists
    */
-  addEdge(edge: Edge): void {
+  async addEdge(edge: Edge): Promise<void> {
     // Validate that both nodes exist
     if (!this.graph.nodes.has(edge.from)) {
       throw new Error(`Source node "${edge.from}" does not exist`);
@@ -104,15 +128,17 @@ export class GraphService {
     }
 
     this.graph.edges.push(edge);
+    await this.saveToDatabase();
   }
 
   /**
    * Remove an edge between two nodes
    */
-  removeEdge(from: string, to: string): void {
+  async removeEdge(from: string, to: string): Promise<void> {
     this.graph.edges = this.graph.edges.filter(
       edge => !(edge.from === from && edge.to === to)
     );
+    await this.saveToDatabase();
   }
 
   /**
