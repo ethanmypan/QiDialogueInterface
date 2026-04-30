@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileUpload } from './components/FileUpload';
 import { GraphView } from './components/GraphView';
 import { Inspector } from './components/Inspector';
@@ -20,11 +20,20 @@ function App() {
       if (response.success && response.data) {
         setNodes(response.data.nodes);
         setEdges(response.data.edges);
+        // If there's data, mark as loaded
+        if (response.data.nodes.length > 0) {
+          setHasLoadedFile(true);
+        }
       }
     } catch (error) {
       console.error('Error loading graph:', error);
     }
   };
+
+  // Load existing graph from database on component mount
+  useEffect(() => {
+    loadGraph();
+  }, []);
 
   const handleFileLoad = async (data: any[]) => {
     try {
