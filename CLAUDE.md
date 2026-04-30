@@ -47,22 +47,43 @@ ts-node src/test-roundtrip.ts
 
 **Note:** Always start the backend before the frontend - the frontend depends on the backend API.
 
-### MongoDB Setup
-```bash
-# 1. Get MongoDB connection string from your lab or MongoDB Atlas
-# 2. Add to backend/.env file:
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/dialogue-editor
+### MongoDB Setup (Docker)
 
-# 3. Start backend - it will automatically connect to MongoDB
+**IMPORTANT**: This project uses a **shared Docker MongoDB container** set up by your professor. Both the QiDialogueInterface (visual editor) and the professor's APIServer (Unreal Engine interface) share the same database.
+
+```bash
+# 1. Start Docker MongoDB container (one-time setup)
+docker run -d \
+  --name cyber-core-mongo \
+  -p 27017:27017 \
+  -v cyber-core-mongo-data:/data/db \
+  --restart unless-stopped \
+  mongo:7
+
+# 2. Verify container is running
+docker ps --filter name=cyber-core-mongo
+
+# 3. Initialize database collections (if not already done)
+python setup_db.py
+
+# 4. Start backend - it will automatically connect to MongoDB
 cd backend
 npm run dev
 ```
+
+**Database Configuration:**
+- **Container**: `cyber-core-mongo`
+- **Database**: `cyber-core`
+- **Collection**: `cg_dialoguetrees` (shared with professor's APIServer)
+- **Connection**: `mongodb://localhost:27017/cyber-core`
 
 The system will:
 - Automatically connect to MongoDB on startup
 - Load existing graph from database (if available)
 - Save all changes (imports, edits, deletes) to MongoDB in real-time
-- Fallback to in-memory storage if MongoDB is not configured
+- Store data in `cg_dialoguetrees` collection (accessible by both this editor and Unreal Engine)
+
+**See [DOCKER-SETUP.md](DOCKER-SETUP.md) for detailed setup instructions and troubleshooting.**
 
 ## Architecture
 
@@ -163,6 +184,56 @@ The system must preserve all data through import → edit → export cycles:
 ```
 
 Use [backend/src/test-roundtrip.ts](backend/src/test-roundtrip.ts) as a starting point for round-trip testing.
+
+## Integration with Professor's APIServer
+
+This QiDialogueInterface **shares the same MongoDB database** with the professor's Python APIServer. This enables a complete workflow:
+
+**System Architecture:**
+```
+┌─────────────────┐
+│  Unreal Engine  │ ← Game runtime
+└────────┬────────┘
+         │ HTTP :3001 (GET/POST dialogue JSON)
+         ▼
+┌──────────────────────┐
+│ Professor's APIServer│ ← Python Flask (mongo_server.py)
+│   Port 3001          │    Generic CRUD for Unreal
+└──────────┬───────────┘
+           │
+           ▼
+┌─────────────────────────┐
+│   Docker MongoDB        │
+│   Container             │
+│   cyber-core-mongo      │
+│                         │
+│   Database: cyber-core  │
+│   Collection:           │
+│   cg_dialoguetrees      │ ← **Shared storage**
+└──────────┬──────────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ QiDialogueInterface  │ ← This visual editor
+│   Backend :3000      │    Node.js/Express/TypeScript
+│   Frontend :5173     │    React/React Flow
+└──────────────────────┘
+```
+
+**Workflow:**
+1. **Design**: Create and edit dialogue visually using QiDialogueInterface (port 5173)
+2. **Store**: Data is automatically saved to MongoDB `cg_dialoguetrees` collection
+3. **Access**: Unreal Engine reads the same data via APIServer (port 3001)
+4. **Iterate**: Changes in either system are immediately available to the other
+
+**API Endpoints:**
+- **QiDialogueInterface**: `http://localhost:3000/api/*` (specialized graph operations)
+- **Professor's APIServer**: `http://localhost:3001/api/cg_dialoguetrees` (generic CRUD for Unreal)
+
+**Important Notes:**
+- Both systems must use the **same Docker MongoDB container** (`cyber-core-mongo`)
+- The collection name `cg_dialoguetrees` is explicitly set in [backend/src/models/dialogue-graph.model.ts](backend/src/models/dialogue-graph.model.ts)
+- Data created in one system is immediately available in the other (no synchronization needed)
 
 ## Known Limitations
 

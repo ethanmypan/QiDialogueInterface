@@ -76,8 +76,10 @@ const DialogueGraphSchema = new Schema<IDialogueGraphDocument>({
 
 /**
  * Export the model
+ * Collection name: cg_dialoguetrees (shared with professor's APIServer)
  */
 export const DialogueGraphModel = mongoose.model<IDialogueGraphDocument>(
-  'DialogueGraph',
-  DialogueGraphSchema
+  'cg_dialoguetrees',
+  DialogueGraphSchema,
+  'cg_dialoguetrees' // Explicit collection name to match professor's setup
 );
